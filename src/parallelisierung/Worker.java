@@ -11,26 +11,23 @@ import java.util.concurrent.CyclicBarrier;
 
 public class Worker extends Thread {
     private final ResultReciever receiver;
-    private BigInteger startVal;
+    private BigInteger current;
+    private Integer stepsToGo;
     private CyclicBarrier barrier;
-    private int offset;
     private DataBase dataBase = DataBase.instance;
-    private volatile boolean timeStop = false;
-    private int cores;
-    private BigInteger stepWidth;
-    private BigInteger stepStop;
+     private volatile boolean timeStop = false;
+
 
     private BigInteger startPrimes;
     private BigInteger stopPrimes;
 
     private boolean calcNextPrimes;
 
-    public Worker(final CyclicBarrier barrier, int cores, ResultReciever receiver, final int offset, BigInteger stepWidth) {
+    public Worker(final CyclicBarrier barrier,
+        ResultReciever receiver) {
         this.barrier = barrier;
-        this.offset = offset;
-        this.cores = cores;
         this.receiver = receiver;
-        this.stepWidth = stepWidth;
+
     }
 
     public void run() {
@@ -39,20 +36,28 @@ public class Worker extends Thread {
                 insertNextPrimesInDatabase(startPrimes, stopPrimes);
                 calcNextPrimes = false;
             } else {
-                while (!timeStop) {
-                    //do fancy berechnungen
-                    List<BigInteger> quartets = checkForConsecutivePrimes(startVal);
-                    if (quartets != null) {
-                        receiver.recieve(quartets);
-                    }
-                    startVal = startVal.add(BigInteger.valueOf(cores));
-                    if (startVal.compareTo(stepStop) > 0) {
+                while (!timeStop&&current!=null) {
+                    List<List<BigInteger>> conquartets=new ArrayList<>();
+                    boolean con=false;
+                    do{
+                        List<BigInteger> quartets = checkForConsecutivePrimes(current);
+                        stepsToGo--;
+                        if (quartets != null) {
+                            con=true;
+                            conquartets.add(quartets);
+                            current=dataBase.getPrimeSet().higher(current);
+                        }else {
+                            con=false;
+                        }
+                    }while (con);
+                    if(conquartets.size()!=0)receiver.recieve(conquartets);
+                    current=dataBase.getPrimeSet().higher(current);
+                    if (stepsToGo <= 0) {
                         break;
                     }
                 }
 
             }
-
             try {
                 barrier.await();
             } catch (InterruptedException | BrokenBarrierException ignored) {
@@ -60,9 +65,10 @@ public class Worker extends Thread {
         }
     }
 
-    public void nextStep(BigInteger from, BigInteger until) {
-        startVal = from.add(BigInteger.valueOf(offset));
-        stepStop = startVal.add(stepWidth);
+
+    public void loadNextSteps(BigInteger startVal,int stepsToGo) {
+        current=startVal;
+        this.stepsToGo=stepsToGo;
     }
 
     public Set<BigInteger> calculatePrimes(BigInteger from, BigInteger until) {
@@ -92,22 +98,26 @@ public class Worker extends Thread {
     }
 
     public List<BigInteger> checkForConsecutivePrimes(BigInteger first) {
-        List<BigInteger> primes = dataBase.getPrimesasList();
         Set<Integer> endings = new HashSet<>();
-        int index = primes.indexOf(first);
+        TreeSet<BigInteger> primeSet = dataBase.getPrimeSet();
+        List<BigInteger> quartets=new ArrayList<>();
 
-        while (true) {
-
-            Integer endDigit = primes.get(index).remainder(BigInteger.TEN).intValue();
+        int i = 0;
+        while (i < 4)
+        {
+            if(first==null)System.out.print(first);
+            Integer endDigit =first.remainder(BigInteger.TEN).intValue();
             if (endings.contains(endDigit)) {
                 break;
             }
+            quartets.add(first);
+            first=primeSet.higher(first);
             endings.add(endDigit);
-            index++;
+            i++;
         }
-        if (endings.size() < 4)
+        if (quartets.size() < 4)
             return null;
-        else return primes.subList(primes.indexOf(first), index);
+        else return quartets;
 
     }
 }

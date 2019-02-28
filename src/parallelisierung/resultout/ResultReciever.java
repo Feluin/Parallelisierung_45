@@ -21,11 +21,11 @@ public class ResultReciever {
         }
     }
 
-    public void recieve(List<BigInteger> quartets) {
+    public void recieve(List<List<BigInteger>> quartets) {
         ResultEntry entry=new ResultEntry(quartets);
         if (!test) {
             try {
-                writer.write(entry.toString());
+                writer.write("\n"+entry.toString()+"\n");
             } catch (IOException e) {
                 e.printStackTrace();
             }

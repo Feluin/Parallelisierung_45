@@ -1,26 +1,33 @@
 package parallelisierung.data;
 
-import parallelisierung.BigMath;
-
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
 public enum DataBase
-{instance;
+{
+    instance;
     private TreeSet<BigInteger> primeSet = new TreeSet<>();
-    private BigInteger currentStepForPrime=BigInteger.ONE;
 
+    private Integer primesToGo=0;
 
-    public void addPrimes(Set<BigInteger> primes)
+    public synchronized void addPrimes(Set<BigInteger> primes)
     {
-        primeSet.addAll(primes);
+        if (primes != null)
+        {
+            int start =primeSet.size();
+            primeSet.addAll(primes);
+            int added=(primeSet.size()-start);
+            primesToGo += added;
+        }
 
+    }
+
+    public TreeSet<BigInteger> getPrimeSet()
+    {
+        return primeSet;
     }
 
     public List<BigInteger> getPrimesasList()
@@ -34,22 +41,17 @@ public enum DataBase
 
     }
 
-    public void calcNextPrimes(final BigInteger stepWidth)
+    DataBase()
     {
-        BigInteger max =currentStepForPrime.add(stepWidth.add(BigInteger.TEN));
-        Set<BigInteger> primes = new HashSet<>();
-        while (currentStepForPrime.compareTo(max) < 0)
-        {
-            if (BigMath.returnPrime(currentStepForPrime))
-            {
-                primes.add(currentStepForPrime);
-            }
-            currentStepForPrime= currentStepForPrime.add(BigInteger.ONE);
-        }
-       primeSet.addAll(primes);
     }
 
-    DataBase(){
-        calcNextPrimes(BigInteger.valueOf(50));
+    public Integer getPrimesToGo()
+    {
+        return primesToGo;
+    }
+
+    public void setPrimesToGo(final Integer primesToGo)
+    {
+        this.primesToGo = primesToGo;
     }
 }
