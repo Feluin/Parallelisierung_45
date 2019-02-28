@@ -13,9 +13,9 @@ public class Worker extends Thread {
     private final ResultReciever receiver;
     private BigInteger current;
     private Integer stepsToGo;
-    private CyclicBarrier barrier;
+    private final CyclicBarrier barrier;
     private DataBase dataBase = DataBase.instance;
-     private volatile boolean timeStop = false;
+    private volatile boolean timeStop = false;
 
 
     private BigInteger startPrimes;
@@ -24,7 +24,7 @@ public class Worker extends Thread {
     private boolean calcNextPrimes;
 
     public Worker(final CyclicBarrier barrier,
-        ResultReciever receiver) {
+                  ResultReciever receiver) {
         this.barrier = barrier;
         this.receiver = receiver;
 
@@ -36,22 +36,22 @@ public class Worker extends Thread {
                 insertNextPrimesInDatabase(startPrimes, stopPrimes);
                 calcNextPrimes = false;
             } else {
-                while (!timeStop&&current!=null) {
-                    List<List<BigInteger>> conquartets=new ArrayList<>();
-                    boolean con=false;
-                    do{
+                while (!timeStop && current != null) {
+                    List<List<BigInteger>> conQuartets = new ArrayList<>();
+                    boolean con;
+                    do {
                         List<BigInteger> quartets = checkForConsecutivePrimes(current);
                         stepsToGo--;
                         if (quartets != null) {
-                            con=true;
-                            conquartets.add(quartets);
-                            current=dataBase.getPrimeSet().higher(current);
-                        }else {
-                            con=false;
+                            con = true;
+                            conQuartets.add(quartets);
+                            current = dataBase.getPrimeSet().higher(current);
+                        } else {
+                            con = false;
                         }
-                    }while (con);
-                    if(conquartets.size()!=0)receiver.recieve(conquartets);
-                    current=dataBase.getPrimeSet().higher(current);
+                    } while (con);
+                    if (conQuartets.size() != 0) receiver.recieve(conQuartets);
+                    current = dataBase.getPrimeSet().higher(current);
                     if (stepsToGo <= 0) {
                         break;
                     }
@@ -66,9 +66,9 @@ public class Worker extends Thread {
     }
 
 
-    public void loadNextSteps(BigInteger startVal,int stepsToGo) {
-        current=startVal;
-        this.stepsToGo=stepsToGo;
+    public void loadNextSteps(BigInteger startVal, int stepsToGo) {
+        current = startVal;
+        this.stepsToGo = stepsToGo;
     }
 
     public Set<BigInteger> calculatePrimes(BigInteger from, BigInteger until) {
@@ -100,18 +100,17 @@ public class Worker extends Thread {
     public List<BigInteger> checkForConsecutivePrimes(BigInteger first) {
         Set<Integer> endings = new HashSet<>();
         TreeSet<BigInteger> primeSet = dataBase.getPrimeSet();
-        List<BigInteger> quartets=new ArrayList<>();
+        List<BigInteger> quartets = new ArrayList<>();
 
         int i = 0;
-        while (i < 4)
-        {
-            if(first==null)System.out.print(first);
-            Integer endDigit =first.remainder(BigInteger.TEN).intValue();
+        while (i < 4) {
+            assert first != null;
+            Integer endDigit = first.remainder(BigInteger.TEN).intValue();
             if (endings.contains(endDigit)) {
                 break;
             }
             quartets.add(first);
-            first=primeSet.higher(first);
+            first = primeSet.higher(first);
             endings.add(endDigit);
             i++;
         }

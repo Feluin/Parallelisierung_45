@@ -13,30 +13,25 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CyclicBarrier;
 
-public class Application
-{
+public class Application {
 
     private ResultReciever reciever;
-    private List<Worker> allworkers = new ArrayList<>();
+    private final List<Worker> allWorkers = new ArrayList<>();
     private Integer currentIndex = 1;
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
         Application application = new Application();
         application.start();
     }
 
-    public void start()
-    {
+    public void start() {
         Timer stop = new Timer();
-        try
-        {
+        try {
             File file = new File(Configuration.INSTANCE.filepath);
             file.createNewFile();
             FileWriter fileWriter = new FileWriter(file);
             reciever = new ResultReciever(fileWriter);
-        } catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -44,47 +39,39 @@ public class Application
 
         CyclicBarrier barrier = new CyclicBarrier(cores, () -> {
             reciever.flush();
-            if (DataBase.instance.getPrimesToGo() < Configuration.INSTANCE.stepWidth)
-            {
-                BigInteger stepWidthtoCalcPrime = BigInteger.valueOf((Configuration.INSTANCE.stepWidth / cores)+1);
+            if (DataBase.instance.getPrimesToGo() < Configuration.INSTANCE.stepWidth) {
+                BigInteger stepWidthToCalcPrime = BigInteger.valueOf((Configuration.INSTANCE.stepWidth / cores) + 1);
                 BigInteger primeStart = DataBase.instance.getPrimeSet().last();
-                for (Worker worker : allworkers)
-                {
-                    worker.loadNextPrimesToCalculate(primeStart, primeStart.add(stepWidthtoCalcPrime));
-                    primeStart = primeStart.add(stepWidthtoCalcPrime.add(BigInteger.ONE));
+                for (Worker worker : allWorkers) {
+                    worker.loadNextPrimesToCalculate(primeStart, primeStart.add(stepWidthToCalcPrime));
+                    primeStart = primeStart.add(stepWidthToCalcPrime.add(BigInteger.ONE));
                 }
-            } else
-            {
-                for (final Worker worker : allworkers)
-                {
-                    worker.loadNextSteps(DataBase.instance.getPrimesasList().get(currentIndex), DataBase.instance.getPrimesToGo() / cores);
+            } else {
+                for (final Worker worker : allWorkers) {
+                    worker.loadNextSteps(DataBase.instance.getPrimesAsList().get(currentIndex), DataBase.instance.getPrimesToGo() / cores);
                     currentIndex = currentIndex + DataBase.instance.getPrimesToGo() / cores;
                 }
                 DataBase.instance.setPrimesToGo(0);
             }
 
         });
-        for (int i = 0; i < cores; i++)
-        {
+        for (int i = 0; i < cores; i++) {
             Worker worker = new Worker(barrier, reciever);
-            allworkers.add(worker);
+            allWorkers.add(worker);
         }
-        stop.schedule(new TimerTask()
-        {
+        stop.schedule(new TimerTask() {
             @Override
-            public void run()
-            {
-                allworkers.forEach(Worker::stopThread);
+            public void run() {
+                allWorkers.forEach(Worker::stopThread);
                 barrier.reset();
             }
         }, 900000);
 
-        BigInteger stepWidthtoCalcPrime = BigInteger.valueOf(Configuration.INSTANCE.stepWidth / cores + 1);
+        BigInteger stepWidthToCalcPrime = BigInteger.valueOf(Configuration.INSTANCE.stepWidth / cores + 1);
         BigInteger primeStart = BigInteger.ONE;
-        for (Worker worker : allworkers)
-        {
-            worker.loadNextPrimesToCalculate(primeStart, primeStart.add(stepWidthtoCalcPrime));
-            primeStart = primeStart.add(stepWidthtoCalcPrime);
+        for (Worker worker : allWorkers) {
+            worker.loadNextPrimesToCalculate(primeStart, primeStart.add(stepWidthToCalcPrime));
+            primeStart = primeStart.add(stepWidthToCalcPrime);
             worker.start();
         }
     }

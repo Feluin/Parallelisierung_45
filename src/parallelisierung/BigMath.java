@@ -79,7 +79,7 @@ public class BigMath {
             neg = true;
             exponent = -exponent;
         }
-        double b2 = bc;
+        double b2;
         double c = exponent - bc;
         int t = (int) Math.ceil(c / LOG10);
         c = t * LOG10;
